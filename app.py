@@ -448,8 +448,7 @@ st.session_state.results = {
     "forecast_date": forecast_date,
     "forecast_model": forecast_method if forecast_active else None,
 }
-
-    st.session_state.results = {
+st.session_state.results = {
         "df_points": df_points,
         "coords": coords,
         "matrix_result": matrix_result,
