@@ -79,13 +79,17 @@ with st.sidebar:
         seed = st.number_input("Random seed", value=42, step=1)
         use_tw_demo = st.checkbox("Sinh time window demo (VRPTW)", value=False)
         st.caption("Case study quy mô nhỏ: 20–30 điểm thu gom + 1 depot, phù hợp 2–3 xe.")
-    else:
-        uploaded_file = st.file_uploader("Upload file (CSV hoặc XLSX)", type=["csv", "xlsx"])
-        st.caption(
-            "Cột bắt buộc: node_id, latitude, longitude, waste_kg. "
-            "Tuỳ chọn: service_time, time_window_start, time_window_end, is_depot."
-        )
+   else:
+    uploaded_file = st.file_uploader(
+        "Upload file (CSV hoặc XLSX)",
+        type=["csv", "xlsx"]
+    )
 
+    st.caption(
+        "Các cột được hỗ trợ: node_id, latitude, longitude, waste_kg, "
+        "service_time, time_window_start, time_window_end, is_depot. "
+        "Nếu thiếu, hệ thống sẽ tự động tạo giá trị mặc định."
+    )
     st.header("2. Dự báo nhu cầu")
     forecast_method = st.selectbox("Mô hình dự báo", ["XGBoost", "Prophet"], index=0)
     forecast_horizon = st.slider("Số ngày dự báo", 1, 14, 7)
