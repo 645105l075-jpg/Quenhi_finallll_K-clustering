@@ -428,7 +428,7 @@ if total_demand > total_capacity:
         st.stop()
 
 
-    # ---------------- OPTIMIZED (OR-TOOLS + GLS) ----------------
+        # ---------------- OPTIMIZED (OR-TOOLS + GLS) ----------------
     with st.spinner("Đang chạy OR-Tools + Guided Local Search..."):
         opt_config = OptimizeConfig(
             num_vehicles=max(num_vehicles, len(baseline_routes)),
@@ -437,11 +437,7 @@ if total_demand > total_capacity:
             use_gls=use_gls,
             first_solution_strategy=first_solution_strategy,
             time_limit_sec=time_limit_sec,
-
-            # Giới hạn thời gian tối đa của mỗi tuyến
             max_route_time_s=max_route_hours * 3600,
-
-            # Time Window
             use_time_windows=use_tw,
             time_windows_s=time_windows_s,
         )
@@ -454,12 +450,8 @@ if total_demand > total_capacity:
             opt_config
         )
 
-
     if not solved:
-        st.error(
-            f"❌ OR-Tools không tìm được lời giải khả thi.\n\n"
-            f"Chi tiết: {msg}"
-        )
+        st.error(msg)
         st.stop()
 
 
