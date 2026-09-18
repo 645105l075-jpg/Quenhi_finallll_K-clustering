@@ -75,12 +75,11 @@ class DemoConfig:
 
 
 def generate_demo_data(config: DemoConfig | None = None) -> pd.DataFrame:
-    """Sinh DataFrame gồm 1 depot + N điểm thu gom quanh Lê Văn Việt.
+    Sinh DataFrame gồm 1 depot + N điểm thu gom quanh Lê Văn Việt.
 
     Toạ độ các điểm thu gom được lấy quanh các waypoint dọc Lê Văn Việt (mô
     phỏng các hẻm / đường nhánh kết nối vào trục chính), KHÔNG bắt buộc nằm
     chính xác trên tim đường.
-    """
     if config is None:
         config = DemoConfig()
 
@@ -166,8 +165,7 @@ def generate_demo_data(config: DemoConfig | None = None) -> pd.DataFrame:
 
 
 def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
-    """Chuẩn hoá dữ liệu người dùng upload (CSV/XLSX) về đúng schema.
-    """
+    Chuẩn hoá dữ liệu người dùng upload (CSV/XLSX) về đúng schema.
     Đọc dữ liệu điểm.
     
     Các thông số được hỗ trợ nhưng KHÔNG bắt buộc phải có trong file:
@@ -180,8 +178,7 @@ def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     - time_window_end
     - is_depot
 
-    Nếu thiếu, hệ thống sẽ tự tạo giá trị mặc định.
-    """
+    Nếu thiếu, hệ thống sẽ tự tạo giá trị mặc định
 
     out = df.copy()
 
