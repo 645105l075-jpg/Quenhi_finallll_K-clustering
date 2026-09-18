@@ -360,24 +360,94 @@ if run_btn:
             st.error(f"Baseline thất bại: {exc}")
             st.stop()
 
-    # ---------------- OPTIMIZED (OR-TOOLS + GLS) ----------------
-    with st.spinner("Đang chạy OR-Tools + Guided Local Search..."):
-        opt_config = OptimizeConfig(
-            num_vehicles=max(num_vehicles, len(baseline_routes)),
-            vehicle_capacity_kg=vehicle_capacity_kg,
-            depot_index=depot_index,
-            use_gls=use_gls,
-            first_solution_strategy=first_solution_strategy,
-            time_limit_sec=time_limit_sec,
-            max_route_time_s=max_route_hours * 3600,
-            use_time_windows=use_tw,
-            time_windows_s=time_windows_s,
-        )
-        optimized_routes, solved, msg = solve_cvrp(dist_m, dur_s, demands, service_times_s, opt_config)
+    # ---------------- KIỂM TRA TÍNH KHẢ THI TRƯỚC KHI CHẠY OR-TOOLS ----------------
 
-    if not solved:
-        st.error(msg)
-        st.stop()
+total_demand = float(sum(demands))
+max_demand = float(max(demands)) if demands else 0.0
+total_capacity = float(num_vehicles * vehicle_capacity_kg)
+
+st.info(
+    f"📦 Tổng demand: {total_demand:,.1f} kg | "
+    f"🚛 Tổng sức chứa đội xe: {total_capacity:,.1f} kg | "
+    f"🚚 Số xe: {num_vehicles}"
+)
+
+# Kiểm tra một điểm có vượt capacity của 1 xe hay không
+if max_demand > vehicle_capacity_kg:
+    st.error(
+        f"❌ Điểm có demand lớn nhất = {max_demand:,.1f} kg, "
+        f"vượt sức chứa xe = {vehicle_capacity_kg:,.1f} kg."
+    )
+    st.stop()
+
+# Kiểm tra tổng demand có vượt tổng capacity đội xe hay không
+if total_demand > total_capacity:
+    min_required = int(
+        (total_demand + vehicle_capacity_kg - 1) // vehicle_capacity_kg
+    )
+
+    st.error(
+        f"❌ Tổng demand = {total_demand:,.1f} kg, "
+        f"nhưng {num_vehicles} xe chỉ chở được "
+        f"{total_capacity:,.1f} kg. "
+        f"Cần ít nhất khoảng {min_required} xe nếu chỉ xét capacity."
+    )
+    st.stop()
+
+
+# ---------------- OPTIMIZED (OR-TOOLS + GLS) ----------------
+
+with st.spinner("Đang chạy OR-Tools + Guided Local Search..."):
+
+    opt_config = OptimizeConfig(
+        num_vehicles=max(num_vehicles, len(baseline_routes)),
+        vehicle_capacity_kg=vehicle_capacity_kg,
+        depot_index=depot_index,
+        use_gls=use_gls,
+        first_solution_strategy=first_solution_strategy,
+        time_limit_sec=time_limit_sec,
+
+        # Giới hạn thời gian tối đa của mỗi tuyến
+        max_route_time_s=max_route_hours * 3600,
+
+        # Time Window
+        use_time_windows=use_tw,
+        time_windows_s=time_windows_s,
+    )
+
+    optimized_routes, solved, msg = solve_cvrp(
+        dist_m,
+        dur_s,
+        demands,
+        service_times_s,
+        opt_config
+    )
+
+
+if not solved:
+    st.error(
+        f"❌ OR-Tools không tìm được lời giải khả thi.\n\n"
+        f"Chi tiết: {msg}"
+    )
+    st.stop()
+
+
+st.session_state.results = {
+    "df_points": df_points,
+    "coords": coords,
+    "matrix_result": matrix_result,
+    "baseline_routes": baseline_routes,
+    "optimized_routes": optimized_routes,
+    "depot_index": depot_index,
+    "osrm_base_url": osrm_base_url,
+    "fuel_rate_l_per_km": fuel_rate_l_per_km,
+    "emission_factor_kg_per_l": emission_factor_kg_per_l,
+    "demands": demands,
+    "service_times_s": service_times_s,
+    "forecast_active": forecast_active,
+    "forecast_date": forecast_date,
+    "forecast_model": forecast_method if forecast_active else None,
+}
 
     st.session_state.results = {
         "df_points": df_points,
