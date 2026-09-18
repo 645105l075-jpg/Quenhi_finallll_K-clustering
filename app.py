@@ -72,67 +72,146 @@ st.divider()
 # ============================================================================
 with st.sidebar:
     st.header("1. Dữ liệu")
-    data_mode = st.radio("Nguồn dữ liệu", ["Dữ liệu demo (Lê Văn Việt)", "Upload CSV/XLSX"])
+    data_mode = st.radio(
+        "Nguồn dữ liệu",
+        ["Dữ liệu demo (Lê Văn Việt)", "Upload CSV/XLSX"]
+    )
 
     if data_mode == "Dữ liệu demo (Lê Văn Việt)":
-        num_points = st.slider("Số điểm thu gom (demo, quanh Lê Văn Việt)", 20, 30, 25)
-        seed = st.number_input("Random seed", value=42, step=1)
-        use_tw_demo = st.checkbox("Sinh time window demo (VRPTW)", value=False)
-        st.caption("Case study quy mô nhỏ: 20–30 điểm thu gom + 1 depot, phù hợp 2–3 xe.")
-   else:
-    uploaded_file = st.file_uploader(
-        "Upload file (CSV hoặc XLSX)",
-        type=["csv", "xlsx"]
-    )
+        num_points = st.slider(
+            "Số điểm thu gom (demo, quanh Lê Văn Việt)",
+            20, 30, 25
+        )
+        seed = st.number_input(
+            "Random seed",
+            value=42,
+            step=1
+        )
+        use_tw_demo = st.checkbox(
+            "Sinh time window demo (VRPTW)",
+            value=False
+        )
+        st.caption(
+            "Case study quy mô nhỏ: 20–30 điểm thu gom + 1 depot, "
+            "phù hợp 2–3 xe."
+        )
 
-    st.caption(
-        "Các cột được hỗ trợ: node_id, latitude, longitude, waste_kg, "
-        "service_time, time_window_start, time_window_end, is_depot. "
-        "Nếu thiếu, hệ thống sẽ tự động tạo giá trị mặc định."
-    )
+    else:
+        uploaded_file = st.file_uploader(
+            "Upload file (CSV hoặc XLSX)",
+            type=["csv", "xlsx"]
+        )
+
+        st.caption(
+            "Các cột được hỗ trợ: node_id, latitude, longitude, waste_kg, "
+            "service_time, time_window_start, time_window_end, is_depot. "
+            "Nếu thiếu, hệ thống sẽ tự động tạo giá trị mặc định."
+        )
+
     st.header("2. Dự báo nhu cầu")
-    forecast_method = st.selectbox("Mô hình dự báo", ["XGBoost", "Prophet"], index=0)
-    forecast_horizon = st.slider("Số ngày dự báo", 1, 14, 7)
+    forecast_method = st.selectbox(
+        "Mô hình dự báo",
+        ["XGBoost", "Prophet"],
+        index=0
+    )
+    forecast_horizon = st.slider(
+        "Số ngày dự báo",
+        1, 14, 7
+    )
     route_forecast_day = st.number_input(
         "Ngày dự báo dùng để định tuyến (1 = ngày mai)",
-        min_value=1, max_value=14, value=1, step=1,
+        min_value=1,
+        max_value=14,
+        value=1,
+        step=1,
     )
-    st.caption("Upload lịch sử 180 ngày ở phần **🔮 Dự báo nhu cầu** bên dưới. Kết quả dự báo sẽ được truyền trực tiếp sang định tuyến.")
+    st.caption(
+        "Upload lịch sử 180 ngày ở phần **🔮 Dự báo nhu cầu** bên dưới. "
+        "Kết quả dự báo sẽ được truyền trực tiếp sang định tuyến."
+    )
 
     st.header("3. Routing (OSRM)")
-    osrm_base_url = st.text_input("OSRM base URL", value=DEFAULT_OSRM_BASE_URL)
-    allow_fallback = st.checkbox(
-        "Cho phép fallback Haversine nếu OSRM lỗi (KHÔNG khuyến nghị)", value=False
+    osrm_base_url = st.text_input(
+        "OSRM base URL",
+        value=DEFAULT_OSRM_BASE_URL
     )
+    allow_fallback = st.checkbox(
+        "Cho phép fallback Haversine nếu OSRM lỗi (KHÔNG khuyến nghị)",
+        value=False
+    )
+
     if allow_fallback:
-        st.warning("Fallback mode – không sử dụng mạng lưới đường thực tế nếu được kích hoạt.")
-        fallback_speed = st.slider("Tốc độ giả định cho fallback (km/h)", 10, 50, 25)
+        st.warning(
+            "Fallback mode – không sử dụng mạng lưới đường thực tế "
+            "nếu được kích hoạt."
+        )
+        fallback_speed = st.slider(
+            "Tốc độ giả định cho fallback (km/h)",
+            10, 50, 25
+        )
     else:
         fallback_speed = 25
 
     st.header("4. Xe & ràng buộc")
-    num_vehicles = st.slider("Số xe tối đa (upper bound cho OR-Tools)", 1, 10, 3)
-    st.caption("Case study quy mô nhỏ: mặc định 2-3 xe thu gom.")
-    vehicle_capacity_kg = st.number_input("Vehicle capacity (kg)", value=1000, step=50)
-    max_route_hours = st.slider("Max route duration (giờ)", 1.0, 8.0, 4.0, step=0.5)
+    num_vehicles = st.slider(
+        "Số xe tối đa (upper bound cho OR-Tools)",
+        1, 10, 3
+    )
+    st.caption(
+        "Case study quy mô nhỏ: mặc định 2-3 xe thu gom."
+    )
+    vehicle_capacity_kg = st.number_input(
+        "Vehicle capacity (kg)",
+        value=1000,
+        step=50
+    )
+    max_route_hours = st.slider(
+        "Max route duration (giờ)",
+        1.0, 8.0, 4.0,
+        step=0.5
+    )
 
     st.header("5. Thuật toán tối ưu (OR-Tools)")
-    use_gls = st.checkbox("Bật Guided Local Search (GLS)", value=True)
+    use_gls = st.checkbox(
+        "Bật Guided Local Search (GLS)",
+        value=True
+    )
     first_solution_strategy = st.selectbox(
         "Chiến lược khởi tạo (initial solution)",
-        ["PATH_CHEAPEST_ARC", "SAVINGS", "PARALLEL_CHEAPEST_INSERTION", "GLOBAL_CHEAPEST_ARC"],
+        [
+            "PATH_CHEAPEST_ARC",
+            "SAVINGS",
+            "PARALLEL_CHEAPEST_INSERTION",
+            "GLOBAL_CHEAPEST_ARC"
+        ],
     )
-    time_limit_sec = st.slider("Thời gian chạy tối ưu (giây)", 5, 120, 20)
+    time_limit_sec = st.slider(
+        "Thời gian chạy tối ưu (giây)",
+        5, 120, 20
+    )
 
     st.header("6. Hệ số tiêu hao & phát thải (có thể chỉnh)")
-    fuel_rate_l_per_km = st.number_input("Fuel rate (lít/km)", value=0.35, step=0.01, format="%.2f")
+    fuel_rate_l_per_km = st.number_input(
+        "Fuel rate (lít/km)",
+        value=0.35,
+        step=0.01,
+        format="%.2f"
+    )
     emission_factor_kg_per_l = st.number_input(
-        "Emission factor (kg CO2 / lít nhiên liệu)", value=2.68, step=0.01, format="%.2f"
+        "Emission factor (kg CO2 / lít nhiên liệu)",
+        value=2.68,
+        step=0.01,
+        format="%.2f"
     )
 
-    run_btn = st.button("Chạy tối ưu", type="primary", use_container_width=True)
+    run_btn = st.button(
+        "Chạy tối ưu",
+        type="primary",
+        use_container_width=True
+    )
 
 st.divider()
+```
 
 # ============================================================================
 # LOAD DỮ LIỆU
