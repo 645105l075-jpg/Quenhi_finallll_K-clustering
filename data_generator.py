@@ -162,13 +162,10 @@ def generate_demo_data(config: DemoConfig | None = None) -> pd.DataFrame:
         )
 
     return pd.DataFrame(rows)
-
-
 def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     Chuẩn hoá dữ liệu người dùng upload (CSV/XLSX) về đúng schema.
-    Đọc dữ liệu điểm.
-    
-    Các thông số được hỗ trợ nhưng KHÔNG bắt buộc phải có trong file:
+
+    Các cột được hỗ trợ nhưng KHÔNG bắt buộc phải có:
     - node_id
     - latitude
     - longitude
@@ -177,8 +174,14 @@ def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     - time_window_start
     - time_window_end
     - is_depot
+    - requires_small_vehicle
+    - is_major_food_generator
+    - waste_recyclable_kg
+    - waste_food_kg
+    - waste_other_kg
 
-    Nếu thiếu, hệ thống sẽ tự tạo giá trị mặc định
+    Nếu thiếu, hệ thống sẽ tự tạo giá trị mặc định.
+    """
 
     out = df.copy()
 
@@ -186,7 +189,7 @@ def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # 1. NODE ID
     # ==============================
     if "node_id" not in out.columns:
-        out["node_id"] = range(1, len(out) + 1)
+        out["node_id"] = [f"P{i:02d}" for i in range(1, len(out) + 1)]
 
     # ==============================
     # 2. LƯỢNG RÁC
@@ -225,18 +228,78 @@ def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     # ==============================
     # 6. TỌA ĐỘ
     # ==============================
-    # Không raise ValueError ở đây.
-    # Nếu có latitude/longitude thì dùng OSRM.
-    # Nếu chưa có thì xử lý ở bước routing.
-    
+    # Không tạo tọa độ giả.
+    # Nếu thiếu latitude / longitude,
+    # app.py sẽ báo lỗi trước khi gọi OSRM.
     if "latitude" not in out.columns:
         out["latitude"] = None
 
     if "longitude" not in out.columns:
         out["longitude"] = None
 
-    return out
+    # ==============================
+    # 7. XE NHỎ / HẺM NHỎ
+    # Khớp với generate_demo_data()
+    # ==============================
+    if "requires_small_vehicle" not in out.columns:
+        out["requires_small_vehicle"] = False
 
+    # ==============================
+    # 8. PHÂN LOẠI NGUỒN RÁC
+    # ==============================
+    if "is_major_food_generator" not in out.columns:
+        out["is_major_food_generator"] = False
+
+    # ==============================
+    # 9. RÁC TÁI CHẾ
+    # Mặc định 20%
+    # ==============================
+    if "waste_recyclable_kg" not in out.columns:
+        out["waste_recyclable_kg"] = (
+            out["waste_kg"] * 0.20
+        ).round(1)
+
+    # ==============================
+    # 10. RÁC THỰC PHẨM
+    # Chỉ áp dụng cho điểm phát sinh
+    # nhiều rác thực phẩm
+    # ==============================
+    if "waste_food_kg" not in out.columns:
+        out["waste_food_kg"] = 0.0
+
+        mask = out["is_major_food_generator"]
+
+        out.loc[mask, "waste_food_kg"] = (
+            (
+                out.loc[mask, "waste_kg"]
+                - out.loc[mask, "waste_recyclable_kg"]
+            ) * 0.45
+        ).round(1)
+
+    # ==============================
+    # 11. RÁC CÒN LẠI
+    # ==============================
+    if "waste_other_kg" not in out.columns:
+        out["waste_other_kg"] = (
+            out["waste_kg"]
+            - out["waste_recyclable_kg"]
+            - out["waste_food_kg"]
+        ).round(1)
+
+    # ==============================
+    # 12. ĐƯA DEPOT LÊN ĐẦU
+    # Các module khác giả định
+    # index 0 = depot
+    # ==============================
+    depot_rows = out[out["is_depot"]]
+    other_rows = out[~out["is_depot"]]
+
+    out = pd.concat(
+        [depot_rows, other_rows],
+        ignore_index=True
+    )
+
+    return out
     # ---- Phân luồng rác (tái chế / thực phẩm / còn lại) ----
     # Nếu người dùng không cung cấp sẵn, suy ra mặc định hợp lý: 20% tái chế,
     # phần còn lại gộp vào "còn lại" (coi như chưa tách riêng rác thực phẩm -
