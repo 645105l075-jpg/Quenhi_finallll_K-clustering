@@ -398,7 +398,36 @@ if total_demand > total_capacity:
 # ---------------- OPTIMIZED (OR-TOOLS + GLS) ----------------
 
 with st.spinner("Đang chạy OR-Tools + Guided Local Search..."):
+total_demand = float(sum(demands))
+max_demand = float(max(demands)) if demands else 0.0
+total_capacity = float(num_vehicles * vehicle_capacity_kg)
 
+st.info(
+    f"📦 Tổng lượng rác: {total_demand:,.1f} kg\n\n"
+    f"🚛 Tổng sức chứa đội xe: {total_capacity:,.1f} kg\n\n"
+    f"🚚 Số xe: {num_vehicles}\n\n"
+    f"📍 Điểm có lượng rác lớn nhất: {max_demand:,.1f} kg"
+)
+
+if max_demand > vehicle_capacity_kg:
+    st.error(
+        f"❌ Một điểm có {max_demand:,.1f} kg, "
+        f"vượt sức chứa 1 xe {vehicle_capacity_kg:,.1f} kg."
+    )
+    st.stop()
+
+if total_demand > total_capacity:
+    min_required = int(
+        (total_demand + vehicle_capacity_kg - 1)
+        // vehicle_capacity_kg
+    )
+
+    st.error(
+        f"❌ Tổng demand = {total_demand:,.1f} kg, "
+        f"nhưng đội xe chỉ chở được {total_capacity:,.1f} kg.\n\n"
+        f"👉 Cần ít nhất khoảng {min_required} xe nếu chỉ xét sức chứa."
+    )
+    st.stop()
     opt_config = OptimizeConfig(
         num_vehicles=max(num_vehicles, len(baseline_routes)),
         vehicle_capacity_kg=vehicle_capacity_kg,
