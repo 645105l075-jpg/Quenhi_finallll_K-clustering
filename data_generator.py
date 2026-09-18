@@ -167,7 +167,6 @@ def generate_demo_data(config: DemoConfig | None = None) -> pd.DataFrame:
 
 def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Chuẩn hoá dữ liệu người dùng upload (CSV/XLSX) về đúng schema.
-def load_points_from_dataframe(df):
     """
     Đọc dữ liệu điểm.
     
