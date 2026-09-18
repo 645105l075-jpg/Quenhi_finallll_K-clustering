@@ -167,29 +167,79 @@ def generate_demo_data(config: DemoConfig | None = None) -> pd.DataFrame:
 
 def load_points_from_dataframe(df: pd.DataFrame) -> pd.DataFrame:
     """Chuẩn hoá dữ liệu người dùng upload (CSV/XLSX) về đúng schema.
-
-    Yêu cầu tối thiểu các cột: node_id, latitude, longitude, waste_kg.
-    Các cột service_time, time_window_start/end, is_depot là tuỳ chọn.
-    Nếu không có node nào is_depot=True, node đầu tiên sẽ được coi là depot.
+def load_points_from_dataframe(df):
     """
-    required = {"node_id", "latitude", "longitude", "waste_kg"}
-    missing = required - set(df.columns)
-    if missing:
-        raise ValueError(f"Thiếu cột bắt buộc trong dữ liệu upload: {sorted(missing)}")
+    Đọc dữ liệu điểm.
+    
+    Các thông số được hỗ trợ nhưng KHÔNG bắt buộc phải có trong file:
+    - node_id
+    - latitude
+    - longitude
+    - waste_kg
+    - service_time
+    - time_window_start
+    - time_window_end
+    - is_depot
+
+    Nếu thiếu, hệ thống sẽ tự tạo giá trị mặc định.
+    """
 
     out = df.copy()
+
+    # ==============================
+    # 1. NODE ID
+    # ==============================
+    if "node_id" not in out.columns:
+        out["node_id"] = range(1, len(out) + 1)
+
+    # ==============================
+    # 2. LƯỢNG RÁC
+    # ==============================
+    if "waste_kg" not in out.columns:
+        out["waste_kg"] = 0.0
+
+    # ==============================
+    # 3. THỜI GIAN PHỤC VỤ
+    # Mặc định: 5 phút / điểm
+    # ==============================
     if "service_time" not in out.columns:
         out["service_time"] = 5.0
+
+    # ==============================
+    # 4. TIME WINDOW
+    # Mặc định: 00:00 → 24:00
+    # ==============================
     if "time_window_start" not in out.columns:
         out["time_window_start"] = 0
+
     if "time_window_end" not in out.columns:
         out["time_window_end"] = 24 * 60
+
+    # ==============================
+    # 5. DEPOT
+    # ==============================
     if "is_depot" not in out.columns:
         out["is_depot"] = False
+
+    # Nếu file không đánh dấu depot
+    # → tự lấy điểm đầu tiên làm depot
+    if not out["is_depot"].any() and len(out) > 0:
         out.loc[out.index[0], "is_depot"] = True
 
-    if not out["is_depot"].any():
-        out.loc[out.index[0], "is_depot"] = True
+    # ==============================
+    # 6. TỌA ĐỘ
+    # ==============================
+    # Không raise ValueError ở đây.
+    # Nếu có latitude/longitude thì dùng OSRM.
+    # Nếu chưa có thì xử lý ở bước routing.
+    
+    if "latitude" not in out.columns:
+        out["latitude"] = None
+
+    if "longitude" not in out.columns:
+        out["longitude"] = None
+
+    return out
 
     # ---- Phân luồng rác (tái chế / thực phẩm / còn lại) ----
     # Nếu người dùng không cung cấp sẵn, suy ra mặc định hợp lý: 20% tái chế,
